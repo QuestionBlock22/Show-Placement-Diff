@@ -10,7 +10,7 @@ Beyond needing Pyiiasmh or Codewrite to assemble the code itself, several files 
 
 ```
 Race.szs/Race_R.szs
-Font.szs/Font_R.szs
+Font.szs/Font_K.szs
 Race_U.szs
 Race_F.szs
 Race_M.szs
