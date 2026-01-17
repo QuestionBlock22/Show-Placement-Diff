@@ -6,7 +6,7 @@ This is a gecko code that displays, from the second race on, each players' place
 
 Mario Kart Wii is the only modern Mario Kart game (Mario Kart Double Dash!! and onwards) to not display each racers' placement difference from the last race. This code reimplements the feature with custom graphics that are faithful to the game's UI design.
 
-Beyond needing Pyiiasmh or Codewrite to assemble the code itself, several files needed to be modified in order for this mod to function.
+Beyond needing Pyiiasmh or Codewrite to assemble the code itself, several files need to be modified in order for this mod to function.
 
 ```
 Race.szs/Race_R.szs
