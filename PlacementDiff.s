@@ -50,7 +50,6 @@ gameModeGP:
 lbz r0, 0xB8C (r12)                                         # racedata -> racesScenario -> settings -> raceNumber
 cmpwi r0, 0
 beq end
-b processPositions
 
 processPositions:
 # Get the current player ID and their previous position.
