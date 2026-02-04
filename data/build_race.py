@@ -1,17 +1,26 @@
 import os
+import sys
 from sys import platform
 import subprocess
 import shutil
 
 print ("Doing system check.")
+chkPass = "System check passed."
+wiimmErr = "Wiimm's SZS Tools could not be found. Please install Wiimm's SZS Tools from (https://szs.wiimm.de/download.html)."
 
 if platform == "win32":
-    subprocess.call ("tools\SystemCheck.bat")
+    if os.path.isfile("C:/Program Files (x86)/Wiimm/SZS/wszst.exe"):
+        print (chkPass)
+    else:
+        print (wiimmErr)
+        sys.exit()
 else:
-    subprocess.call ("tools/SystemCheck.sh")
-
-print ("System check passed.")
-
+    if os.path.isfile("/usr/local/bin/wszst"):
+        print (chkPass)
+    else:
+        print (wiimmErr)
+        sys.exit()
+         
 Eng_NA = "Race_U"
 Eng_EU = "Race_E"
 Fra_NA = "Race_Q"
@@ -23,6 +32,8 @@ Ita = "Race_I"
 Jpn = "Race_J"
 Kor = "Race_K"
 BMG_Loc = "message/Race.bmg"
+errorCount = 0
+region = input("Input the letters P, E, J or K for your region.\n")
 
 # Extract and rebuild Race and Font files.
 if os.path.isfile("Race_R.szs") is True:
@@ -37,16 +48,24 @@ os.remove("Race.szs")
 subprocess.run(["wszst", "create", "Race.d"])
 shutil.rmtree("Race.d")
 
+def handleInput():
+    if len(region) > 1:
+        print ("No more than one character can be input. Exiting.\n")
+        sys.exit()
+    else:
+        main()
+
 # Loop on error.
 def handleError():
+    errorCount += 1
+    if errorCount > 2:
+        print ("Unrecoverable error.")
+        sys.exit()
     main()
-
+    
 # Region-specific operations
-
-region = input("Input the letters P, E, J or K for your region.\n")
-
 def main():
-    if region == "E":
+    if region == "E" or region == "e":
         subprocess.run(["wszst", "extract", f"{Eng_NA}.szs", f"{Fra_NA}.szs", f"{Esp_NA}.szs"])
         shutil.copyfile("text/NTSC-U/English/Race.bmg", f"{Eng_NA}.d/{BMG_Loc}")
         shutil.copyfile("text/NTSC-U/French/Race.bmg", f"{Fra_NA}.d/{BMG_Loc}")
@@ -59,7 +78,7 @@ def main():
         shutil.rmtree(f"{Fra_NA}.d")
         shutil.rmtree(f"{Esp_NA}.d")
         buildFont()
-    elif region == "P":
+    elif region == "P" or region == "p":
         subprocess.run(["wszst", "extract", f"{Eng_EU}.szs", f"{Esp_EU}.szs", f"{Fra_EU}.szs", f"{Ita}.szs", f"{Ger}.szs"])
         shutil.copyfile("text/PAL/English/Race.bmg", f"{Eng_EU}.d/{BMG_Loc}")
         shutil.copyfile("text/PAL/French/Race.bmg", f"{Fra_EU}.d/{BMG_Loc}")
@@ -78,14 +97,14 @@ def main():
         shutil.rmtree(f"{Ger}.d")
         shutil.rmtree(f"{Ita}.d")
         buildFont()
-    elif region == "J":
+    elif region == "J" or region == "j":
         subprocess.run(["wszst", "extract", f"{Jpn}.szs"])
         shutil.copyfile("text/NTSC-J/Japanese/Race.bmg", f"{Jpn}.d/{BMG_Loc}")
         os.remove(f"{Jpn}.szs")
         subprocess.run(["wszst", "create", f"{Jpn}.d"])
         shutil.rmtree(f"{Jpn}.d")
         buildFont()
-    elif region == "K":
+    elif region == "K" or region == "k":
         shutil.copyfile ("Race.szs", "Race_R.szs")
         subprocess.run(["wszst", "extract", f"{Kor}.szs"])
         shutil.copyfile("text/NTSC-K/Korean/Race.bmg", f"{Kor}.d/{BMG_Loc}")
@@ -115,5 +134,5 @@ def buildFont():
         subprocess.run(["wszst", "create", "Font.d"])
         shutil.rmtree("Font.d")
     return
-
-main()
+    
+handleInput()
