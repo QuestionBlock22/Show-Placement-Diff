@@ -37,6 +37,9 @@ lwz r12, -raceDataBase@l (r11)
 # Check current game mode and if it's the first race. Battle mode is not supported at the moment.
 mr r8, r11                                                  # Backup the upper half of Racedata.
 lwz r0, 0xB70 (r12)                                         # racedata -> racesScenario -> settings -> gameMode
+cmpwi r0, 7
+beq gameModeFriendRoom
+bgt end
 cmpwi r0, 0                                                 # Check if the current game mode is Grand Prix.
 beq gameModeGP
 lwz r12, sectionMgrBase@l (r11)
@@ -50,6 +53,14 @@ gameModeGP:
 lbz r0, 0xB8C (r12)                                         # racedata -> racesScenario -> settings -> raceNumber
 cmpwi r0, 0
 beq end
+b processPositions
+
+gameModeFriendRoom:
+lwz r12, sectionMgrBase@l (r11)
+lwz r11, 0x98 (r12)
+lwz r0, 0x2d0 (r11)                                         # sectionMgr -> sectionParams -> onlineParams -> onlineRaceNumber
+cmpwi r0, 0
+beq end
 
 processPositions:
 # Get the current player ID and their previous position.
@@ -57,7 +68,7 @@ lwz r11, -raceDataBase@l (r8)
 mulli r0, r31, 240
 addi r6, r11, 40
 add r8, r6, r0
-lbz r12, 0xE1 (r8)                                          # racedata -> racesScenario -> players -> previousPosition
+lbz r12, 0xE0 (r8)                                          # racedata -> racesScenario -> players -> finalPosition
 
 # Compare the player's placement from the previous race with the current race.
 cmpw r24, r12
@@ -79,7 +90,7 @@ position_compare:
     .asciz "position_compare"
     .align 2
 
-# Draw the graphic. (Register 3 argument already present so there's no need for register move.)
+# Draw the graphic.
 callFunc:
 mflr r4
 lis r11, setTextboxMessage@h
