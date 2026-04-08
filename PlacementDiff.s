@@ -36,30 +36,30 @@ lwz r12, -raceDataBase@l (r11)
 
 # Check current game mode and if it's the first race. Battle mode is not supported at the moment.
 mr r8, r11                                                  # Backup the upper half of Racedata.
-lwz r0, 0xB70 (r12)                                         # racedata -> racesScenario -> settings -> gameMode
-cmpwi r0, 7
+lwz r5, 0xB70 (r12)                                         # racedata -> racesScenario -> settings -> gameMode
+cmpwi r5, 7                                                 # Check if the current game mode is Friend Rooms.
 beq gameModeFriendRoom
 bgt end
-cmpwi r0, 0                                                 # Check if the current game mode is Grand Prix.
+cmpwi r5, 0                                                 # Check if the current game mode is Grand Prix.
 beq gameModeGP
 lwz r12, sectionMgrBase@l (r11)
 lwz r11, 0x98 (r12)
-lwz r0, 0x60 (r11)                                          # sectionMgr -> sectionParams -> vsRaceNumber
-cmpwi r0, 1
+lwz r4, 0x60 (r11)                                          # sectionMgr -> sectionParams -> vsRaceNumber
+cmpwi r4, 1
 beq end
 b processPositions
 
 gameModeGP:
-lbz r0, 0xB8C (r12)                                         # racedata -> racesScenario -> settings -> raceNumber
-cmpwi r0, 0
+lbz r4, 0xB8C (r12)                                         # racedata -> racesScenario -> settings -> raceNumber
+cmpwi r4, 0
 beq end
 b processPositions
 
 gameModeFriendRoom:
 lwz r12, sectionMgrBase@l (r11)
 lwz r11, 0x98 (r12)
-lwz r0, 0x2d0 (r11)                                         # sectionMgr -> sectionParams -> onlineParams -> onlineRaceNumber
-cmpwi r0, 0
+lwz r4, 0x2d0 (r11)                                         # sectionMgr -> sectionParams -> onlineParams -> onlineRaceNumber
+cmpwi r4, 0
 beq end
 
 processPositions:
@@ -68,9 +68,32 @@ lwz r11, -raceDataBase@l (r8)
 mulli r0, r31, 240
 addi r6, r11, 40
 add r8, r6, r0
-lbz r12, 0xE0 (r8)                                          # racedata -> racesScenario -> players -> finalPosition
+
+# Compare game modes again. If the current game mode is Friend Rooms OR Grand Prix, make sure to compare the race number based on the hexadecimal system, otherwise compare based on the decimal system.
+cmpwi r5, 7
+cmpwi cr1, r5, 0
+cror 4*cr0+eq, 4*cr0+eq, 4*cr1+eq                            # if (scenario.settings.gameMode == MODE_FRIEND_ROOM || scenario.settings.gameMode == MODE_GRAND_PRIX)
+beq getHexRaceNumber
+
+# Compare decimal race number (VS).
+cmpwi r4, 2
+bne loadFinalPosition
+b loadPreviousPosition
+
+# Compare hexadecimal race number (GP, FROOM).
+getHexRaceNumber:
+cmpwi r4, 1
+bne loadFinalPosition
+
+loadPreviousPosition:
+lbz r12, 0xE1 (r8)                                          # racedata -> racesScenario -> players[12] -> previousPosition
+b comparePlacements
+
+loadFinalPosition:
+lbz r12, 0xE0 (r8)                                          # racedata -> racesScenario -> players[12] -> finalPosition
 
 # Compare the player's placement from the previous race with the current race.
+comparePlacements:
 cmpw r24, r12
 blt raceDiffImprove
 bgt raceDiffRegress
