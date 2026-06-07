@@ -3,7 +3,6 @@
 import sys
 from sys import platform
 import os
-# import pathlib
 import subprocess
 import shutil
 
