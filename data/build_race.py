@@ -1,138 +1,167 @@
-import os
+#!/usr/bin/python
+
 import sys
 from sys import platform
+import os
+# import pathlib
 import subprocess
 import shutil
 
-print ("Doing system check.")
-chkPass = "System check passed."
-wiimmErr = "Wiimm's SZS Tools could not be found. Please install Wiimm's SZS Tools from (https://szs.wiimm.de/download.html)."
+def getRegionLetter():
+    regionLetter = input("Input the letters P, E, J or K for your region.\n")
 
-if platform == "win32":
-    if os.path.isfile("C:/Program Files (x86)/Wiimm/SZS/wszst.exe"):
-        print (chkPass)
+    if len(regionLetter) > 1:
+        print ("No more than one character can be input. Aborting.\n")
+        sys.exit()
+
+    return regionLetter
+
+def buildGlobalArchive(regionLetter):
+    if os.path.isfile("Race_R.szs") is True:
+        if os.path.isfile("Race.szs") is True:
+            os.remove("Race.szs")
+        os.rename("Race_R.szs", "Race.szs")
+        print ("Found Korean Race archive. Renamed for convenience.\n")
+
+    subprocess.run(["wszst", "extract", "Race.szs"])
+    print("Copying Race files.\n")
+    shutil.copyfile("position_12players.brlyt", "Race.d/result/blyt/position_12players.brlyt")
+    os.remove("Race.szs")
+    subprocess.run(["wszst", "create", "Race.d"])
+    shutil.rmtree("Race.d")
+    print ("Created Race file.\n")
+
+    if regionLetter == 'K' or regionLetter == 'k':
+        os.rename("Race.szs", "Race_R.szs")
+
+def buildFont(regionLetter):
+    fontFile = "Font"
+    if regionLetter == 'K' or regionLetter == 'k':
+        fontFile = "Font_K"
+
+    subprocess.run(["wszst", "extract", f"{fontFile}.szs"])
+    shutil.copyfile("tt_kart_extension_font.brfnt", f"{fontFile}.d/tt_kart_extension_font.brfnt")
+    os.remove(f"{fontFile}.szs")
+    subprocess.run(["wszst", "create", f"{fontFile}.d"])
+    shutil.rmtree(f"{fontFile}.d")
+    print("Created font file.\n")
+
+def buildRegionalArchives(regionLetter):
+    bmgLocation = "message/Race.bmg"
+    maxCycle = 0
+
+    if regionLetter == 'E' or regionLetter == 'e':
+        gameVersion = "NTSC-U"
+        English = "Race_U"
+        French = "Race_Q"
+        Spanish = "Race_M"
+        languageList = [
+            English,
+            French,
+            Spanish
+        ]
+        maxCycle = 2
+    elif regionLetter == 'P' or regionLetter == 'p':
+        gameVersion = "PAL"
+        English = "Race_E"
+        French = "Race_F"
+        German = "Race_G"
+        Italian = "Race_I"
+        Spanish = "Race_S"
+        languageList = [
+            English,
+            French,
+            German,
+            Italian,
+            Spanish
+        ]
+        maxCycle = 4
+    elif regionLetter == 'J' or regionLetter == 'j':
+        gameVersion = "NTSC-J"
+        Japanese = "Race_J"
+        languageList = [Japanese]
+    elif regionLetter == 'K' or regionLetter == 'k':
+        gameVersion = "NTSC-K"
+        Korean = "Race_K"
+        languageList = [Korean]
     else:
-        print (wiimmErr)
+        print("Unrecoverable error. Aborting.\n")
         sys.exit()
-else:
-    if os.path.isfile("/usr/local/bin/wszst"):
-        print (chkPass)
-    else:
-        print (wiimmErr)
-        sys.exit()
-         
-Eng_NA = "Race_U"
-Eng_EU = "Race_E"
-Fra_NA = "Race_Q"
-Fra_EU = "Race_F"
-Esp_NA = "Race_M"
-Esp_EU = "Race_S"
-Ger = "Race_G"
-Ita = "Race_I"
-Jpn = "Race_J"
-Kor = "Race_K"
-BMG_Loc = "message/Race.bmg"
-errorCount = 0
-region = input("Input the letters P, E, J or K for your region.\n")
 
-# Extract and rebuild Race and Font files.
-if os.path.isfile("Race_R.szs") is True:
-    if os.path.isfile("Race.szs") is True:
-        os.remove("Race.szs")
-    os.rename("Race_R.szs", "Race.szs")
-    print ("Found Korean Race archive. Renamed for convenience.")
+    languageCycle = 0
 
-subprocess.run(["wszst", "extract", "Race.szs"])
-shutil.copyfile("position_12players.brlyt", "Race.d/result/blyt/position_12players.brlyt")
-os.remove("Race.szs")
-subprocess.run(["wszst", "create", "Race.d"])
-shutil.rmtree("Race.d")
+    for entry in languageList:
+        subprocess.run(["wszst", "extract", f"{languageList[languageCycle]}.szs"])
+        languageCycle += 1
 
-def handleInput():
-    if len(region) > 1:
-        print ("No more than one character can be input. Exiting.\n")
-        sys.exit()
-    else:
-        main()
+    sorted(languageList)
 
-# Loop on error.
-def handleError():
-    errorCount += 1
-    if errorCount > 2:
-        print ("Unrecoverable error.")
-        sys.exit()
-    main()
-    
-# Region-specific operations
+    languageCycle = 0
+    curDir = f"text/{gameVersion}"
+
+    for entry in languageList:
+        if regionLetter == 'E' or regionLetter == 'e':
+            if languageCycle == 0:
+                language = "English"
+            elif languageCycle == 1:
+                language = "French"
+            elif languageCycle == 2:
+                language = "Spanish"
+        elif regionLetter == 'P' or regionLetter == 'p':
+            if languageCycle == 0:
+                language = "English"
+            elif languageCycle == 1:
+                language = "French"
+            elif languageCycle == 2:
+                language = "German"
+            elif languageCycle == 3:
+                language = "Italian"
+            elif languageCycle == 4:
+                language = "Spanish"
+        elif regionLetter == 'J' or regionLetter == 'j':
+            language = "Japanese"
+        elif regionLetter == 'K' or regionLetter == 'k':
+            language = "Korean"
+        else:
+            print("Unrecoverable error. Aborting\n")
+            sys.exit()
+
+        print(f"Copying {language} files.\n")
+        shutil.copyfile(f"{curDir}/{language}/Race.bmg", f"{languageList[languageCycle]}.d/{bmgLocation}")
+
+        if languageCycle == maxCycle:
+            languageCycle = 0
+            for entry in languageList:
+                os.remove(f"{languageList[languageCycle]}.szs")
+                languageCycle += 1
+            break
+
+        languageCycle += 1
+
+    languageCycle = 0
+    for entry in languageList:
+        subprocess.run(["wszst", "create", f"{languageList[languageCycle]}.d"])
+        shutil.rmtree(f"{languageList[languageCycle]}.d")
+        languageCycle += 1
+
+    print("Created all language files.\n")
+
 def main():
-    if region == "E" or region == "e":
-        subprocess.run(["wszst", "extract", f"{Eng_NA}.szs", f"{Fra_NA}.szs", f"{Esp_NA}.szs"])
-        shutil.copyfile("text/NTSC-U/English/Race.bmg", f"{Eng_NA}.d/{BMG_Loc}")
-        shutil.copyfile("text/NTSC-U/French/Race.bmg", f"{Fra_NA}.d/{BMG_Loc}")
-        shutil.copyfile("text/NTSC-U/Spanish/Race.bmg", f"{Esp_NA}.d/{BMG_Loc}")
-        os.remove(f"{Eng_NA}.szs")
-        os.remove(f"{Fra_NA}.szs")
-        os.remove(f"{Esp_NA}.szs")
-        subprocess.run(["wszst", "create", f"{Eng_NA}.d", f"{Fra_NA}.d", f"{Esp_NA}.d"])
-        shutil.rmtree(f"{Eng_NA}.d")
-        shutil.rmtree(f"{Fra_NA}.d")
-        shutil.rmtree(f"{Esp_NA}.d")
-        buildFont()
-    elif region == "P" or region == "p":
-        subprocess.run(["wszst", "extract", f"{Eng_EU}.szs", f"{Esp_EU}.szs", f"{Fra_EU}.szs", f"{Ita}.szs", f"{Ger}.szs"])
-        shutil.copyfile("text/PAL/English/Race.bmg", f"{Eng_EU}.d/{BMG_Loc}")
-        shutil.copyfile("text/PAL/French/Race.bmg", f"{Fra_EU}.d/{BMG_Loc}")
-        shutil.copyfile("text/PAL/Spanish/Race.bmg", f"{Esp_EU}.d/{BMG_Loc}")
-        shutil.copyfile("text/PAL/Italian/Race.bmg", f"{Ger}.d/{BMG_Loc}")
-        shutil.copyfile("text/PAL/German/Race.bmg", f"{Ita}.d/{BMG_Loc}")
-        os.remove(f"{Eng_EU}.szs")
-        os.remove(f"{Esp_EU}.szs")
-        os.remove(f"{Fra_EU}.szs")
-        os.remove(f"{Ger}.szs")
-        os.remove(f"{Ita}.szs")
-        subprocess.run(["wszst", "create", f"{Eng_EU}.d", f"{Fra_EU}.d", f"{Esp_EU}.d", f"{Ger}.d", f"{Ita}.d"])
-        shutil.rmtree(f"{Eng_EU}.d")
-        shutil.rmtree(f"{Fra_EU}.d")
-        shutil.rmtree(f"{Esp_EU}.d")
-        shutil.rmtree(f"{Ger}.d")
-        shutil.rmtree(f"{Ita}.d")
-        buildFont()
-    elif region == "J" or region == "j":
-        subprocess.run(["wszst", "extract", f"{Jpn}.szs"])
-        shutil.copyfile("text/NTSC-J/Japanese/Race.bmg", f"{Jpn}.d/{BMG_Loc}")
-        os.remove(f"{Jpn}.szs")
-        subprocess.run(["wszst", "create", f"{Jpn}.d"])
-        shutil.rmtree(f"{Jpn}.d")
-        buildFont()
-    elif region == "K" or region == "k":
-        shutil.copyfile ("Race.szs", "Race_R.szs")
-        subprocess.run(["wszst", "extract", f"{Kor}.szs"])
-        shutil.copyfile("text/NTSC-K/Korean/Race.bmg", f"{Kor}.d/{BMG_Loc}")
-        os.remove(f"{Kor}.szs")
-        subprocess.run(["wszst", "create", f"{Kor}.d"])
-        shutil.rmtree(f"{Kor}.d")
-        buildFont()
+    sysCheckPassed = "System check passed."
 
+    if platform == "win32":
+        if os.path.isfile("C:/Program Files (x86)/Wiimm/SZS/wszst.exe"):
+            print (sysCheckPassed)
+    elif os.path.isfile("/usr/local/bin/wszst"):
+        print (sysCheckPassed)
     else:
-        print ("Invalid character(s) entered. Please try again.")
-        handleError()
+        print ("Wiimm's SZS Tools could not be found. Please install Wiimm's SZS Tools from (https://szs.wiimm.de/download.html).")
+        sys.exit()
 
-    print ("\n Operation completed successfully.")
+    regionLetter = getRegionLetter()
+    buildGlobalArchive(regionLetter)
+    buildRegionalArchives(regionLetter)
+    buildFont(regionLetter)
+    print("Operation completed successfully.\n")
 
-# Operate on the font file.
-def buildFont():
-    if region == "K":
-        subprocess.run(["wszst", "extract", "Font_K.szs"])
-        shutil.copyfile ("tt_kart_extension_font.brfnt", "Font_K.d/tt_kart_extension_font.brfnt")
-        os.remove("Font_K.szs")
-        subprocess.run(["wszst", "create", "Font_K.d"])
-        shutil.rmtree("Font_K.d")
-    else:
-        subprocess.run(["wszst", "extract", "Font.szs"])
-        shutil.copyfile("tt_kart_extension_font.brfnt", "Font.d/tt_kart_extension_font.brfnt")
-        os.remove("Font.szs")
-        subprocess.run(["wszst", "create", "Font.d"])
-        shutil.rmtree("Font.d")
-    return
-    
-handleInput()
+main()
