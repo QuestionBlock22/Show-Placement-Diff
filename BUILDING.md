@@ -48,14 +48,33 @@ Font_K.szs
 * **Optional:** [wuj5](https://www.github.com/stblr/wuj5) 
 -- (For compiling "position_12players.json5" into a brlyt file.)
 
+### Mark Files as Executable
+
+Depending on your operating system, you may need to mark relevant files as executable. On most Linux distros, it's as simple as right clicking the file, going to "Properties," and then, in the permissions section, checking the box that says "Make executable."
+
+However, on some distros and macOS, this GUI option does not exist.
+
+In order to run the script, the following needs to be made executable first:
+```
+Main script:
+
+  build_race.py
+```
+
+Run the following command to make this file executable:
+
+```
+chmod 755 "build_race.py"
+```
+
 ### Running
 
 Open a terminal and run the following command:
 ```
-py3 build_race.py
+python build_race.py
 
 ## or ##
 
-python build_race.py
+./build_race.py
 
 ```
